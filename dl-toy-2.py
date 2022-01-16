@@ -70,15 +70,18 @@ def salient_ppref(motiv_state, ppref):
     return filter((lambda x: x[0] in motiv_state and x[1] in motiv_state),ppref)
 
 def pref_p_to_o(ppref, outcomes):
-    print("p_to_o: ppref",ppref,"\nresult",{(x,y):all([incmpble(ppref, i,j) or leq(ppref,i,j) for i in outcomes[x] for j in outcomes[y]]) for x in outcomes for y in outcomes})
+    print("p_to_o: ppref:",ppref,"\tresult:",{(x,y):all([incmpble(ppref, i,j) or leq(ppref,i,j) for i in outcomes[x] for j in outcomes[y]]) for x in outcomes for y in outcomes})
     return {(x,y) for x in outcomes for y in outcomes if all([incmpble(ppref, i,j) or leq(ppref,i,j) for i in outcomes[x] for j in outcomes[y]])}
 
 
-def pareto_maximals(prefmap, alts):
-    return {a for a in alts if any([a in maximals(prefs) for prefs in prefmap.values()]) and all([a in maximals(prefs) or a in indiffs(prefs,alts) for prefs in prefmap.values()])}
+def pareto_dominants(prefmap, alts, alt):
+    ret = {alt1 for alt1 in alts if alt != alt1 and all([leq(pref, alt, alt1) for pref in prefmap.values()])}
+    print("dominants:", alt, "<=",ret)
+    return ret
 
-
-
+def pareto_front(prefmap, alts):
+    print("front:", prefmap, "alts:",alts)
+    return {a for a in alts if not pareto_dominants(prefmap,alts,a)}
 
 
 def main():
@@ -97,23 +100,25 @@ def main():
     sample_possible_motiv_states = [["a", "b", "c"], ["a", "b"], ["c", "b", "d"]]
     sample_possible_motiv_states_map = {"Alice": [["a", "b", "c"], ["a", "b"]], "Bob": [["a", "b"],  ["c", "b", "d"]]}
 
-    sample_assignment = {"Alice": 0, "Bob":0}
+    sample_assignment = {"Alice": 1, "Bob":0}
 
 
-    
-    print("maximals test", maximals(sample_ppref))
-    print("indiffs test", indiffs(sample_ppref,sample_properties))
+    print("leq test:", leq(sample_ppref, "a", "b"))
+    print("maximals test:", maximals(sample_ppref))
+    print("indiffs test:", indiffs(sample_ppref,sample_properties))
     msm = assign(sample_possible_motiv_states_map,sample_assignment)
-    print("motiv state selection test", msm)
+    print("motiv state selection test:", msm)
     sample_salient_ppref = list(salient_ppref(sample_motiv_state, sample_ppref))
-    print("pprefs", sample_ppref, "\nsalient pprefs", sample_salient_ppref)
+    print("sample pprefs:", sample_ppref, "\nsalient pprefs:", sample_salient_ppref)
     salient_pprefmap = {player:set(salient_ppref(msm[player] , ppref)) for player,ppref in sample_pprefmap.items()}
-    print("ppref map", sample_pprefmap, "\nsalient ppref map", salient_pprefmap)
+    print("ppref map:", sample_pprefmap, "\nsalient ppref map:", salient_pprefmap)
     oprefmap = {player:set(pref_p_to_o(ppref, sample_outcomes)) for player,ppref in salient_pprefmap.items()}
-    print("opref map", oprefmap)
-    pm = pareto_maximals(oprefmap, sample_outcomes)
-    print("pareto maximals - pprefs", set(pareto_maximals(salient_pprefmap, sample_properties)))
-    print("pareto maximals - oprefs", set(pm))
+    print("opref map:", oprefmap)
+    print("pareto dominants", pareto_dominants(sample_pprefmap, sample_properties, "d" ))
+    print("pareto front - sample_pprefs", pareto_front(sample_pprefmap, sample_properties))
+    print("pareto_front - pprefs", pareto_front(salient_pprefmap, sample_properties))
+    print("pareto_front - pprefs", pareto_front(salient_pprefmap, sample_properties))
+    print("pareto_front - oprefs", pareto_front(oprefmap, sample_outcomes))
 
     
 main()
