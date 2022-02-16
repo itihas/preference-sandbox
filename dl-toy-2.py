@@ -66,9 +66,28 @@ def minimals(rel):
 def assign(possible_motiv_states_map, assignment):
     return {k:v[assignment[k]] for k,v in possible_motiv_states_map.items()}
 
+# motivational states are a topology
+# =====
+# what we want is for each value in possible_motiv_states to be a topology over properties, i.e. for it to obey the following axioms:
+# 1. all_props in pms and {} in pms
+# 2. if a in pms and b in pms: union(a,b) in pms
+# 3. if a in pms and b in pms: intersection(a,b) in pms
+# sooo, we can construct a pms obeying these as a closure over any pms - add in the unions, intersections, all_props, and empty.
+# which is what we'll do, because it's easy.
+# the question still remains: which of these is _interesting_?
+
+
+def top_closure(pms, props):
+    additions = [props, set()]
+    for ms in pms:
+        for ms1 in pms:
+            additions.append(set.union(ms,ms1))
+            additions.append(set.intersection(ms,ms1))
+    return set.union(pms,frozenset(additions))
+
+
 def salient_ppref(motiv_state, ppref):
     return filter((lambda x: x[0] in motiv_state and x[1] in motiv_state),ppref)
-
 
 
 def pref_p_to_o(ppref, outcomes):
