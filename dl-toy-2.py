@@ -105,6 +105,56 @@ def pareto_front(prefmap, alts):
     return {a for a in alts if not pareto_dominants(prefmap,alts,a)}
 
 
+# Fix (possible) motivational states, derive prefs
+# ====
+# given a motivational state and an set of properties, output a candidate preference.
+# given a motivational state and a set of outcomes, say whether there exist preferences over properties that can distinguish outcomes.
+#  \-> for this we need: given a set of outcomes, say whether there exist preferences over properties that can distinguish those outcomes.
+
+def distinguish_outcomes(o1, o2):
+    return {(p1,p2) for p1 in o1 for p2 in o2 if p1 != p2}
+
+def distinguishable_outcomes(motiv_state, outcomes):
+    return {distinguish_outcomes(o1,o2) is not None for o1 in outcomes for o2 in outcomes}
+
+def distinguish_outcomes_modulo_salience(motiv_state, o1, o2):
+    return {(p1,p2) for p1 in o1 for p2 in o2 if p1 != p2 and p1 in motiv_state and p2 in motiv_state}
+
+def distinguishable_outcomes_under_salience(motiv_state, outcomes):
+    return {distinguish_outcomes_modulo_salience(motiv_states,o1,o2) is not None for o1 in outcomes for o2 in outcomes}
+
+def all_salient_ppref_candidates(motiv_state, outcomes):
+    candidates = set()
+    [candidates.union(distinguish_outcomes_modulo_salience(motiv_states,o1,o2)) for o1 in outcomes for o2 in outcomes]
+    return candidates
+
+# finding all posets that fulfil the salience criteria, by building them out of the candidate relations.
+# might not be the most efficient way.
+def possible_salient_pprefs(motiv_state,outcomes,curr):
+    aspc = all_salient_ppref_candidates(motiv_state,outcomes)
+    possibles = [curr]
+    for p in aspc:
+        if p not in curr and p[::-1] not in curr:
+            possibles.extend(possible_salient_pprefs(motiv_state, outcomes, curr.add(p)))
+    return possibles
+
+
+# going by sequence for number-of-posets (https://oeis.org/A001035) this is likely to get out of hand to generate very quickly. But if we establish an order over the preference_candidates (which we can get out of an order over the preferences, ofc), we get a lex order over the posets also; and can probably generate the poset associated with a given index. (Uniquely identifying posets by number is kinda cool and seems useful anyway.)
+# Question: just how much smaller than the total number of posets is the number of salient pprefs? How much does the motiv-state business narrow things down?
+# It's more than the number of posets over the set of distinguishable outcomes, but less than the number of posets over the set of salient properties. (Latter because there are some property distinctions that are not useful for distinguishing outcomes.)
+# oh, also: how many properties at minimum do you need to distinguish between n outcomes?
+# conversely: given a motiv_state (i.e. a set of salient properties) of size n, what is the largest number of outcomes that we can distinguish between?
+# ugh this has the flavor of number theory
+# I hate it already
+# i.e. the largest number of unique subsets of n.
+# oh that's simpler. that's just 2^n.
+# OH WAIT SHIT TRANSITIVITY
+# okay now we need that data structure for posets there's no way around it
+# hmm siena poset: transitive relationships are _implied_.
+# problem here: we gotta do "build one viable poset" before we get "generate all viable posets"
+
+
+
 def main():
     sample_properties = set("abcd")
     sample_players = ["Alice", "Bob"]

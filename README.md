@@ -10,6 +10,13 @@ Sandbox for playing with preference structures.
 
 Type system in the comments of `dl-toy-2.py` suggests a better structure for it going forward, utils that will be generally useful (particularly, orderings); as well that this all should probably be happening in Haskell. Translation pending my finding the will to go on.
 
+## Fix Motivational States, Generalize Preferences
+
+- Given a set of possible motivational states for a player, what constraints are applicable to player preferences?
+- Wishlist: Given a relationship of motivational states to extensional gameplay, what constraints are applicable to player preferences?
+
+
+
 ## SWFs and Arrow's Impossibility Theorem (wishlist)
 
 Implementing Bergson-Samuelson SWFs and a "proof" of Arrow's (algorithm for finding the dictator, satisfaction that it will always find one) would probably generate all the utilities I need, and the doubts / questions I have to boot.
