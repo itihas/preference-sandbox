@@ -115,7 +115,7 @@ def distinguish_outcomes(o1, o2):
     return {(p1,p2) for p1 in o1 for p2 in o2 if p1 != p2}
 
 def distinguishable_outcomes(motiv_state, outcomes):
-    return {distinguish_outcomes(o1,o2) is not None for o1 in outcomes for o2 in outcomes}
+    return {distinguish_outcomes(o1,o2) is not None for o1 in outcomes for o2 in outcomes} # where's the motiv_state filter,darlin'?
 
 def distinguish_outcomes_modulo_salience(motiv_state, o1, o2):
     return {(p1,p2) for p1 in o1 for p2 in o2 if p1 != p2 and p1 in motiv_state and p2 in motiv_state}
@@ -139,6 +139,7 @@ def possible_salient_pprefs(motiv_state,outcomes,curr):
     return possibles
 
 
+
 # going by sequence for number-of-posets (https://oeis.org/A001035) this is likely to get out of hand to generate very quickly. But if we establish an order over the preference_candidates (which we can get out of an order over the preferences, ofc), we get a lex order over the posets also; and can probably generate the poset associated with a given index. (Uniquely identifying posets by number is kinda cool and seems useful anyway.)
 # Question: just how much smaller than the total number of posets is the number of salient pprefs? How much does the motiv-state business narrow things down?
 # It's more than the number of posets over the set of distinguishable outcomes, but less than the number of posets over the set of salient properties. (Latter because there are some property distinctions that are not useful for distinguishing outcomes.)
@@ -154,25 +155,65 @@ def possible_salient_pprefs(motiv_state,outcomes,curr):
 # problem here: we gotta do "build one viable poset" before we get "generate all viable posets"
 
 
+# per meeting on 2022-2-18, the smarter way to do this is to build the posets over properties at the same time as figuring out which property distinctions distinguish outcomes. Otherwise, we're "throwing information away"; I'm not sure I'm convinced by this, but I think it gestures at the fact that a single distinction's composition with other distinctions depends on the context of what other distinctions can be made.
+
+
+def filtered_outcomes(motiv_state, outcomes):
+    return {k:frozenset({o for o in v if o in motiv_state}) for k,v in outcomes.items()}
+
+
+def build_possible_ppref(motiv_state, sofar): # we will filter by outcome-relevance later.
+    
+    # motiv_state[0] has indegrees and outdegrees. I want to count through their powerset, throw out all the cycle-makers, and proceed, knowing that all relations to it are addressed in a previous step.
+    # how do I tell if I am building a cycle?
+    # well, on any given step, we might add a (p1,p2) where we had previously added a (p2,p0) and a (p0,p1).
+    # also, even if we were adding a (p2,p1) in the above case, that would be redundant with the transitivity assumption.
+    # so, if both p1 and p2 are already in sofar, we skip that branch?
+    # what if (p2, p-1) and (p1,p0) ?
+    # what if the above and also (p-1,p0) ?
+    # then we DO want to add the possibility.
+    
+    branches = []
+
+    for p1 in motiv_state:
+        for p2 in motiv_state:
+            if (p1,p2) not in sofar and not makes_cycle(sofar, p1,p2): # now to write the makes_cycle bit.
+                branches.append((p1,p2))
+            if (p2,p1) not in sofar and not makes_cycle(sofar, p2,p1):
+                branches.append((p2,p1))
+
+    result = [sofar]
+    
+    for branch in branches:
+        result.extend(build_possible_ppref(motiv_state, sofar.union(branch)))
+
+    return result
+
+
+# poset impl: dictionary. keys are items a, vals are lists of items b s.t. a <= b.
+
+
+
+
+
+sample_properties = set("abcd")
+sample_players = ["Alice", "Bob"]
+# sample_outcomes = {"alpha":frozenset("a"), "gamma":frozenset("b")}
+sample_outcomes = {"alpha":frozenset("a"), "gamma":frozenset("bc")}
+
+sample_ppref = {("a", "b"), ("b", "c")}
+sample_pprefmap = {"Alice":{("a","b"), ("b", "c"), ("c", "a")}, "Bob":{("a", "b")}}
+# sample_pprefmap = {"Alice":{("a","b"), ("b", "c"), ("c", "d"), ("d", "a")}, "Bob":{("a", "b")}}
+
+sample_motiv_state = {"b", "c"}
+sample_motiv_state_map = {"Alice":{"a", "b", "c"}, "Bob": {"a", "b"}}
+
+sample_possible_motiv_states = [["a", "b", "c"], ["a", "b"], ["c", "b", "d"]]
+sample_possible_motiv_states_map = {"Alice": [["a", "b", "c"], ["a", "b"]], "Bob": [["a", "b"],  ["c", "b", "d"]]}
+
+sample_assignment = {"Alice": 1, "Bob":0}
 
 def main():
-    sample_properties = set("abcd")
-    sample_players = ["Alice", "Bob"]
-    # sample_outcomes = {"alpha":frozenset("a"), "gamma":frozenset("b")}
-    sample_outcomes = {"alpha":frozenset("a"), "gamma":frozenset("bc")}
-
-    sample_ppref = {("a", "b"), ("b", "c")}
-    sample_pprefmap = {"Alice":{("a","b"), ("b", "c"), ("c", "a")}, "Bob":{("a", "b")}}
-    # sample_pprefmap = {"Alice":{("a","b"), ("b", "c"), ("c", "d"), ("d", "a")}, "Bob":{("a", "b")}}
-
-    sample_motiv_state = {"b", "c"}
-    sample_motiv_state_map = {"Alice":{"a", "b", "c"}, "Bob": {"a", "b"}}
-
-    sample_possible_motiv_states = [["a", "b", "c"], ["a", "b"], ["c", "b", "d"]]
-    sample_possible_motiv_states_map = {"Alice": [["a", "b", "c"], ["a", "b"]], "Bob": [["a", "b"],  ["c", "b", "d"]]}
-
-    sample_assignment = {"Alice": 1, "Bob":0}
-
 
     print("\nleq_test:", leq(sample_ppref, "a", "b"))
     print("maximals_test:", maximals(sample_ppref))
