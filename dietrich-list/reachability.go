@@ -18,8 +18,12 @@ func main() {
 
 // Game states are int, all states are "alternatives" i.e. can be preferred or dispreferred.
 
+type edge struct {
+	from, to int
+}
+
 type gameboard struct {
-	edges map[int][]int 	// state1 < state2 iff state2 in prefs[state1]
+	edges map[edge]bool 	// state1 < state2 iff state2 in prefs[state1]
 	point int
 }
 
